@@ -5,6 +5,7 @@ const authRoutes = require("./routes/auth.routes");
 const availabilityRoutes = require("./routes/availability.routes");
 const doctorRoutes = require("./routes/doctor.routes");
 const consultationRoutes = require("./routes/consultation.routes");
+const prescriptionRoutes = require("./routes/prescription.routes");
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/doctors", doctorRoutes);
 app.use("/api/consultations", consultationRoutes);
+app.use("/api/prescriptions", prescriptionRoutes);
 
 app.get("/health", (req, res) => {
   res.status(200).json({

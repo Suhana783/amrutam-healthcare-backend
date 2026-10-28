@@ -13,4 +13,12 @@ const createAvailabilitySchema = z
     }
   );
 
-module.exports = { createAvailabilitySchema };
+const searchDoctorsSchema = z.strictObject({
+  specialization: z.string().trim().min(1).max(150).optional(),
+  min_experience: z.coerce.number().int().min(0).optional(),
+  max_fee: z.coerce.number().min(0).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+module.exports = { createAvailabilitySchema, searchDoctorsSchema };

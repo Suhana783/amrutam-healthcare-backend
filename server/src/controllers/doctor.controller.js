@@ -29,4 +29,20 @@ async function createDoctorProfile(req, res) {
   }
 }
 
-module.exports = { createDoctorProfile };
+async function searchDoctors(req, res) {
+  try {
+    const doctors = await doctorService.searchDoctors(req.query);
+
+    return res.status(200).json({
+      doctors,
+    });
+  } catch (error) {
+    console.error("Doctor search error:", error.message);
+
+    return res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+}
+
+module.exports = { createDoctorProfile, searchDoctors };
