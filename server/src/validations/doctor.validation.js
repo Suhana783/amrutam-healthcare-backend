@@ -1,17 +1,15 @@
 const { z } = require("zod");
 
-const createAvailabilitySchema = z
-  .object({
-    starts_at: z.string().datetime({ offset: true }),
-    ends_at: z.string().datetime({ offset: true }),
-  })
-  .refine(
-    (data) => new Date(data.ends_at) > new Date(data.starts_at),
-    {
-      message: "End time must be later than start time",
-      path: ["ends_at"],
-    }
-  );
+const createDoctorSchema = z.strictObject({
+  full_name: z.string().trim().min(2).max(150),
+  email: z.string().trim().email().max(255),
+  phone: z.string().trim().min(7).max(20).optional(),
+  password: z.string().min(12).max(128),
+  specialization: z.string().trim().min(2).max(150),
+  qualification: z.string().trim().max(500).optional(),
+  experience_years: z.coerce.number().int().min(0).max(80).optional(),
+  consultation_fee: z.coerce.number().min(0).max(1000000).optional(),
+});
 
 const searchDoctorsSchema = z.strictObject({
   specialization: z.string().trim().min(1).max(150).optional(),
@@ -21,4 +19,4 @@ const searchDoctorsSchema = z.strictObject({
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
-module.exports = { createAvailabilitySchema, searchDoctorsSchema };
+module.exports = { createDoctorSchema, searchDoctorsSchema };

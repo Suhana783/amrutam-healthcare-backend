@@ -5,4 +5,10 @@ const bookConsultationSchema = z.strictObject({
   reason: z.string().trim().max(1000).optional(),
 });
 
-module.exports = { bookConsultationSchema };
+
+const updateConsultationStatusSchema = z.strictObject({
+  status: z.enum(["completed", "cancelled"]),
+});
+
+
+module.exports = { bookConsultationSchema, updateConsultationStatusSchema };

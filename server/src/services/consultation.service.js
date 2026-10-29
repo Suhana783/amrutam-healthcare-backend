@@ -109,4 +109,64 @@ async function getConsultations(userId, role) {
   return result.rows;
 }
 
-module.exports = { bookConsultation, getConsultations };
+
+async function updateConsultationStatus(userId, role, consultationId, status) {
+  let query;
+  let values;
+
+  if (role === "doctor" && status === "completed") {
+    query = `
+      UPDATE consultations c
+      SET status = $3, updated_at = NOW()
+      FROM doctors d
+      WHERE c.doctor_id = d.id
+        AND d.user_id = $1
+        AND c.id = $2
+        AND c.status = 'scheduled'
+      RETURNING c.id, c.patient_id, c.doctor_id,
+                c.slot_id, c.scheduled_at, c.status,
+                c.reason, c.updated_at
+    `;
+    values = [userId, consultationId, status];
+  } else if (role === "patient" && status === "cancelled") {
+    query = `
+      UPDATE consultations
+      SET status = 'cancelled', updated_at = NOW()
+      WHERE patient_id = $1
+        AND id = $2
+        AND status = 'scheduled'
+        AND scheduled_at > NOW()
+      RETURNING id, patient_id, doctor_id, slot_id,
+                scheduled_at, status, reason, updated_at
+    `;
+    values = [userId, consultationId];
+  } else {
+    const error = new Error("You are not allowed to perform this status update");
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const result = await pool.query(query, values);
+
+  if (result.rowCount === 0) {
+    const error = new Error(
+      "Consultation not found, not assigned to you, or no longer eligible for this update"
+    );
+    error.statusCode = 409;
+    throw error;
+  }
+
+  if (status === "cancelled" && result.rows[0].slot_id) {
+    await pool.query(
+      `UPDATE availability_slots
+       SET is_booked = FALSE
+       WHERE id = $1`,
+      [result.rows[0].slot_id]
+    );
+  }
+
+  return result.rows[0];
+}
+
+
+module.exports = { bookConsultation, getConsultations, updateConsultationStatus };
