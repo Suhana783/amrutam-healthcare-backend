@@ -1,7 +1,7 @@
 const { z } = require("zod");
 
 const createDoctorSchema = z.strictObject({
-  full_name: z.string().trim().min(2).max(150),
+  full_name: z.string().trim().min(1).max(150),
   email: z.string().trim().email().max(255),
   phone: z.string().trim().min(7).max(20).optional(),
   password: z.string().min(12).max(128),

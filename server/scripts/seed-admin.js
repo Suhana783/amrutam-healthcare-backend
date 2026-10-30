@@ -1,4 +1,5 @@
 require("dotenv").config();
+
 const bcrypt = require("bcrypt");
 const pool = require("../src/config/db");
 
@@ -11,10 +12,11 @@ async function seedAdmin() {
     );
   }
 
-  if (ADMIN_PASSWORD.length < 12) {
-    throw new Error("Admin password must be at least 12 characters long");
+  if (ADMIN_PASSWORD.length < 12 || Buffer.byteLength(ADMIN_PASSWORD) > 72) {
+    throw new Error("Admin password must be between 12 and 72 bytes");
   }
 
+  const name = ADMIN_NAME.trim();
   const email = ADMIN_EMAIL.trim().toLowerCase();
   const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, 12);
 
@@ -23,17 +25,30 @@ async function seedAdmin() {
        full_name, email, password_hash, role, is_active
      )
      VALUES ($1, $2, $3, 'admin', TRUE)
-     ON CONFLICT (email)
-     DO UPDATE SET
-       password_hash = EXCLUDED.password_hash,
-       role = 'admin',
-       is_active = TRUE,
-       updated_at = NOW()
+     ON CONFLICT (email) DO NOTHING
      RETURNING id, full_name, email, role, is_active`,
-    [ADMIN_NAME.trim(), email, passwordHash]
+    [name, email, passwordHash]
   );
 
-  console.log("Admin account ready:", result.rows[0]);
+  if (result.rowCount === 0) {
+    const existing = await pool.query(
+      `SELECT id, full_name, email, role, is_active
+       FROM users
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (existing.rows[0]?.role !== "admin") {
+      throw new Error(
+        "This email already belongs to a non-admin account. Use a different email."
+      );
+    }
+
+    console.log("Admin account already exists:", existing.rows[0]);
+    return;
+  }
+
+  console.log("Admin account created:", result.rows[0]);
 }
 
 seedAdmin()

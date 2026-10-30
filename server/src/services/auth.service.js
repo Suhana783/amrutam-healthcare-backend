@@ -2,14 +2,14 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 
-async function registerUser({ full_name, email, password, role }) {
+async function registerUser({ full_name, email, password }) {
   const passwordHash = await bcrypt.hash(password, 12);
 
   const result = await pool.query(
     `INSERT INTO users (full_name, email, password_hash, role)
-     VALUES ($1, $2, $3, $4)
+     VALUES ($1, $2, $3, 'patient')
      RETURNING id, full_name, email, role, created_at`,
-    [full_name.trim(), email.trim().toLowerCase(), passwordHash, role]
+    [full_name.trim(), email.trim().toLowerCase(), passwordHash]
   );
 
   return result.rows[0];
