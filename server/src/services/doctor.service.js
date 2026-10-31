@@ -1,11 +1,11 @@
-const bcrypt = require("bcrypt");
 const pool = require("../config/db");
+const bcrypt = require("bcrypt");
 
 async function createDoctorAccount({
   full_name,
   email,
-  password,
   phone,
+  password,
   specialization,
   qualification,
   experience_years,
@@ -20,10 +20,10 @@ async function createDoctorAccount({
 
     const userResult = await client.query(
       `INSERT INTO users (
-        full_name, email, phone, password_hash, role, is_active
-      )
-      VALUES ($1, $2, $3, $4, 'doctor', TRUE)
-      RETURNING id, full_name, email, phone, role, created_at`,
+         full_name, email, phone, password_hash, role, is_active
+       )
+       VALUES ($1, $2, $3, $4, 'doctor', TRUE)
+       RETURNING id, full_name, email, phone, role, is_active, created_at`,
       [
         full_name.trim(),
         email.trim().toLowerCase(),
@@ -36,16 +36,19 @@ async function createDoctorAccount({
 
     const doctorResult = await client.query(
       `INSERT INTO doctors (
-        user_id, specialization, qualification,
-        experience_years, consultation_fee
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING id, user_id, specialization, qualification,
-                experience_years, consultation_fee, created_at`,
+         user_id,
+         specialization,
+         qualification,
+         experience_years,
+         consultation_fee
+       )
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, user_id, specialization, qualification,
+                 experience_years, consultation_fee, created_at`,
       [
         user.id,
-        specialization.trim(),
-        qualification?.trim() || null,
+        specialization,
+        qualification ?? null,
         experience_years ?? 0,
         consultation_fee ?? 0,
       ]
@@ -97,9 +100,12 @@ async function searchDoctors({
     conditions.push(`d.consultation_fee <= $${values.length}`);
   }
 
-  const currentPage = Number.isInteger(page) && page > 0 ? page : 1;
+  const currentPage =
+    Number.isInteger(page) && page > 0 ? page : 1;
+
   const pageSize =
     Number.isInteger(limit) && limit > 0 && limit <= 50 ? limit : 10;
+
   const offset = (currentPage - 1) * pageSize;
 
   values.push(pageSize);
@@ -109,8 +115,13 @@ async function searchDoctors({
   const offsetPlaceholder = `$${values.length}`;
 
   const result = await pool.query(
-    `SELECT d.id, u.full_name, d.specialization, d.qualification,
-            d.experience_years, d.consultation_fee
+    `SELECT
+       d.id,
+       u.full_name,
+       d.specialization,
+       d.qualification,
+       d.experience_years,
+       d.consultation_fee
      FROM doctors d
      JOIN users u ON u.id = d.user_id
      WHERE ${conditions.join(" AND ")}
